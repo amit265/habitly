@@ -7,7 +7,7 @@ import SafeScreen from '../../components/SafeScreen';
 export default function AddHabitScreen() {
     return (
         <SafeScreen>
-            <View style={{ paddingVertical: 12 }}>
+            <View style={{ paddingHorizontal: 12 }}>
                 <Text style={{ fontSize: 18, fontWeight: '600' }}>{'<'} Back</Text>
             </View>
 

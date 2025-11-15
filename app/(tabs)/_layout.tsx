@@ -38,11 +38,7 @@ export default function TabLayout() {
                 return <AntDesign name="book" size={focused ? 28 : 24} color={color} />;
               case "stats":
                 return (
-                  <MaterialCommunityIcons
-                    name="cards-outline"
-                    size={focused ? 28 : 24}
-                    color={color}
-                  />
+                 <AntDesign name="user" size={focused ? 28 : 24} color={color} />
                 );
               
              

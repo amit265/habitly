@@ -7,7 +7,7 @@ import SafeScreen from '../../components/SafeScreen';
 export default function HomeScreen() {
     return (
         <SafeScreen>
-            <View style={{ paddingHorizontal: 16, paddingTop: 12 }}>
+            <View style={{ paddingHorizontal: 12}}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Text style={{ fontSize: 18, fontWeight: '600' }}>Habitly</Text>
                     <Pressable onPress={() => { /* open settings route */ }}>

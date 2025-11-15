@@ -6,7 +6,7 @@ import SafeScreen from '../../components/SafeScreen';
 export default function StatsScreen() {
     return (
         <SafeScreen>
-            <View style={{ paddingHorizontal: 16, paddingTop: 12 }}>
+            <View style={{ paddingHorizontal: 12 }}>
                 <Text style={{ fontSize: 18, fontWeight: '600', textAlign: 'center' }}>Stats</Text>
             </View>
 
