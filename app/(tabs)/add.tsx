@@ -1,48 +1,367 @@
-import React from 'react';
-import { View, Text, TextInput, Pressable } from 'react-native';
+// app/(tabs)/add.tsx
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
+import { useRouter } from "expo-router";
+import SafeScreen from "../../components/SafeScreen";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import { SafeAreaView } from "react-native-safe-area-context";
-import SafeScreen from '../../components/SafeScreen';
+type GoalType = "simple" | "time" | "count";
+
+type Habit = {
+  id: string;
+  name: string;
+  emoji: string;
+  goalType: GoalType;
+  goalValue?: number | null; // minutes for time, count for count
+  repeatDays: number[]; // 0..6 (Sun..Sat)
+  reminder?: string | null; // "HH:MM" or null
+  createdAt: string; // ISO
+  streak: { current: number; longest: number };
+  history?: Array<{ date: string; status: "done" | "skip" | "partial"; value?: number }>;
+};
+
+const STORAGE_KEY = "habitly:habits_v1";
 
 export default function AddHabitScreen() {
-    return (
-        <SafeScreen>
-            <View style={{ paddingHorizontal: 12 }}>
-                <Text style={{ fontSize: 18, fontWeight: '600' }}>{'<'} Back</Text>
+  const router = useRouter();
+
+  const [name, setName] = useState("");
+  const [emoji, setEmoji] = useState("🏃"); // default emoji
+  const [goalType, setGoalType] = useState<GoalType>("simple");
+  const [goalValue, setGoalValue] = useState<string>(""); // hold as string for input
+  const [repeatDays, setRepeatDays] = useState<number[]>([1,2,3,4,5]); // Mon-Fri default
+  const [reminderEnabled, setReminderEnabled] = useState(false);
+  const [reminderTime, setReminderTime] = useState<string>("08:00");
+
+  const [saving, setSaving] = useState(false);
+
+  // small emoji palette
+  const emojis = ["🏃", "📚", "🧘", "💧", "☕️", "📝", "🎸", "🚶", "🍎", "🛌", "🧹", "💪"];
+
+  function toggleDay(dayIndex: number) {
+    setRepeatDays(prev => {
+      if (prev.includes(dayIndex)) return prev.filter(d => d !== dayIndex);
+      return [...prev, dayIndex].sort((a,b) => a-b);
+    });
+  }
+
+  function validateTimeString(t: string) {
+    // Accepts HH:MM 24-hour format
+    if (!t) return false;
+    const m = t.match(/^([01]?\d|2[0-3]):([0-5]\d)$/);
+    return !!m;
+  }
+
+  function parseGoalValueInput(input: string): number | null {
+    if (!input) return null;
+    const n = Number(input);
+    if (Number.isNaN(n)) return null;
+    return Math.max(0, Math.floor(n));
+  }
+
+  async function saveHabit() {
+    // validation
+    if (!name.trim()) {
+      Alert.alert("Please enter a habit name");
+      return;
+    }
+    if (reminderEnabled && !validateTimeString(reminderTime)) {
+      Alert.alert("Reminder time must be in HH:MM format (24-hour)");
+      return;
+    }
+
+    const parsedGoal = parseGoalValueInput(goalValue);
+
+    if (goalType === "count" && (parsedGoal === null || parsedGoal <= 0)) {
+      Alert.alert("Please enter a valid count goal (e.g. 10)");
+      return;
+    }
+
+    if (goalType === "time" && (parsedGoal === null || parsedGoal <= 0)) {
+      Alert.alert("Please enter time in minutes (e.g. 15)");
+      return;
+    }
+
+    const newHabit: Habit = {
+      id: Date.now().toString(),
+      name: name.trim(),
+      emoji,
+      goalType,
+      goalValue: parsedGoal,
+      repeatDays,
+      reminder: reminderEnabled ? reminderTime : null,
+      createdAt: new Date().toISOString(),
+      streak: { current: 0, longest: 0 },
+      history: [],
+    };
+
+    try {
+      setSaving(true);
+      const raw = await AsyncStorage.getItem(STORAGE_KEY);
+      const existing: Habit[] = raw ? JSON.parse(raw) : [];
+      const updated = [newHabit, ...existing];
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      // Navigate back to home. Use replace so the user doesn't go back to this screen with stale state.
+      router.replace("/(tabs)");
+    } catch (err) {
+      console.error("Failed to save habit", err);
+      Alert.alert("Failed to save habit. Try again.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  // small helper to toggle reminder enabled (coerce properly)
+  function toggleReminder() {
+    setReminderEnabled(prev => !prev);
+    // if turning on and empty, ensure default valid time
+    if (!reminderEnabled && !reminderTime) setReminderTime("08:00");
+  }
+
+  return (
+    <SafeScreen>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.select({ ios: "padding", android: undefined })}>
+        <ScrollView contentContainerStyle={styles.container}>
+          <Text style={styles.header}>Add Habit</Text>
+
+          <View style={styles.field}>
+            <Text style={styles.label}>Habit name</Text>
+            <TextInput
+              placeholder="e.g. Read for 30 minutes"
+              value={name}
+              onChangeText={setName}
+              style={styles.input}
+              returnKeyType="done"
+            />
+          </View>
+
+          <View style={styles.field}>
+            <Text style={styles.label}>Emoji</Text>
+            <View style={styles.emojiRow}>
+              {emojis.map(e => (
+                <TouchableOpacity
+                  key={e}
+                  onPress={() => setEmoji(e)}
+                  style={[styles.emojiCell, emoji === e && styles.emojiSelected]}
+                >
+                  <Text style={{ fontSize: 22 }}>{e}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <Text style={styles.helper}>Tap to choose. Selected: <Text style={{fontSize:18}}>{emoji}</Text></Text>
+          </View>
+
+          <View style={styles.field}>
+            <Text style={styles.label}>Goal</Text>
+
+            <View style={styles.row}>
+              <TouchableOpacity
+                onPress={() => setGoalType("simple")}
+                style={[styles.chip, goalType === "simple" && styles.chipActive]}
+              >
+                <Text style={goalType === "simple" ? styles.chipTextActive : styles.chipText}>Simple Done</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => setGoalType("time")}
+                style={[styles.chip, goalType === "time" && styles.chipActive]}
+              >
+                <Text style={goalType === "time" ? styles.chipTextActive : styles.chipText}>Time (min)</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => setGoalType("count")}
+                style={[styles.chip, goalType === "count" && styles.chipActive]}
+              >
+                <Text style={goalType === "count" ? styles.chipTextActive : styles.chipText}>Count</Text>
+              </TouchableOpacity>
             </View>
 
+            {(goalType === "time" || goalType === "count") && (
+              <TextInput
+                placeholder={goalType === "time" ? "Minutes (e.g. 15)" : "Count (e.g. 10)"}
+                keyboardType="number-pad"
+                value={goalValue}
+                onChangeText={setGoalValue}
+                style={[styles.input, { marginTop: 10 }]}
+              />
+            )}
+          </View>
 
-            <View style={{ marginTop: 8 }}>
-                <TextInput placeholder="Habit name" style={{ borderWidth: 1, borderColor: '#eee', borderRadius: 8, padding: 12 }} />
-
-
-                <View style={{ marginTop: 12 }}>
-                    <Text>Emoji Picker Row / Button</Text>
-                </View>
-
-
-                <View style={{ marginTop: 12 }}>
-                    <Text style={{ marginBottom: 8 }}>Goal</Text>
-                    <Text> ( ) Simple Done ( ) Time Based ( ) Count Based </Text>
-                </View>
-
-
-                <View style={{ marginTop: 12 }}>
-                    <Text>Repeat Days: [Su] [Mo] [Tu] [We] [Th] [Fr] [Sa]</Text>
-                </View>
-
-
-                <View style={{ marginTop: 12 }}>
-                    <Text>Reminder: [ Toggle ] [ Time Picker ]</Text>
-                </View>
+          <View style={styles.field}>
+            <Text style={styles.label}>Repeat days</Text>
+            <View style={styles.weekRow}>
+              {["Su","Mo","Tu","We","Th","Fr","Sa"].map((d, idx) => {
+                const active = repeatDays.includes(idx);
+                return (
+                  <TouchableOpacity
+                    key={d}
+                    onPress={() => toggleDay(idx)}
+                    style={[styles.dayBox, active && styles.dayBoxActive]}
+                  >
+                    <Text style={active ? styles.dayTextActive : styles.dayText}>{d}</Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
+          </View>
 
+          <View style={styles.field}>
+            <Text style={styles.label}>Reminder</Text>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+              <TouchableOpacity onPress={toggleReminder} style={[styles.toggle, reminderEnabled && styles.toggleOn]}>
+                <Text style={{ color: reminderEnabled ? "#fff" : "#111" }}>{reminderEnabled ? "On" : "Off"}</Text>
+              </TouchableOpacity>
 
-            <View style={{ position: 'absolute', left: 16, right: 16, bottom: 24 }}>
-                <Pressable style={{ backgroundColor: '#111', padding: 14, borderRadius: 10, alignItems: 'center' }}>
-                    <Text style={{ color: 'white', fontWeight: '600' }}>SAVE HABIT</Text>
-                </Pressable>
+              <TextInput
+                placeholder="HH:MM (24h)"
+                value={reminderTime}
+                onChangeText={setReminderTime}
+                editable={reminderEnabled}
+                style={[styles.input, { flex: 1, marginLeft: 12 }]}
+              />
             </View>
-        </SafeScreen>
-    );
+            <Text style={styles.helper}>If reminder is on, use 24-hour format (e.g. 08:00)</Text>
+          </View>
+
+          <View style={{ marginTop: 18 }} />
+          <TouchableOpacity onPress={saveHabit} style={[styles.saveBtn, saving && { opacity: 0.6 }]}>
+            <Text style={styles.saveBtnText}>{saving ? "Saving..." : "Save Habit"}</Text>
+          </TouchableOpacity>
+
+          <View style={{ height: 80 }} />
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeScreen>
+  );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    padding: 16,
+  },
+  header: {
+    fontSize: 20,
+    fontWeight: "700",
+    marginBottom: 12,
+  },
+  field: {
+    marginBottom: 16,
+  },
+  label: {
+    fontSize: 13,
+    color: "#333",
+    marginBottom: 8,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: "#eee",
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: "#fff",
+  },
+  emojiRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  emojiCell: {
+    width: 44,
+    height: 44,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#eee",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 8,
+    marginBottom: 8,
+  },
+  emojiSelected: {
+    borderColor: "#111",
+    backgroundColor: "#f7f7f7",
+  },
+  helper: {
+    marginTop: 8,
+    fontSize: 12,
+    color: "#666",
+  },
+  row: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  chip: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#eee",
+    marginRight: 8,
+  },
+  chipActive: {
+    backgroundColor: "#111",
+    borderColor: "#111",
+  },
+  chipText: {
+    color: "#111",
+  },
+  chipTextActive: {
+    color: "#fff",
+  },
+  weekRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  dayBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#eee",
+  },
+  dayBoxActive: {
+    backgroundColor: "#111",
+    borderColor: "#111",
+  },
+  dayText: {
+    color: "#111",
+  },
+  dayTextActive: {
+    color: "#fff",
+    fontWeight: "600",
+  },
+  toggle: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#eee",
+  },
+  toggleOn: {
+    backgroundColor: "#111",
+    borderColor: "#111",
+  },
+  saveBtn: {
+    backgroundColor: "#111",
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  saveBtnText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 16,
+  },
+});

@@ -5,6 +5,11 @@ import SafeScreen from '../../components/SafeScreen';
 
 
 export default function HomeScreen() {
+
+    const todayDate = new Date().getDate() + ' ' + new Date().toLocaleString('default', { month: 'long' }) + ', ' + new Date().getFullYear();
+    const timeNow = new Date().getHours();
+    console.log("Today's Date:", timeNow);
+    const welcomeMessage = timeNow < 12 ? "Good Morning" : timeNow < 18 ? "Good Afternoon" : "Good Evening";
     return (
         <SafeScreen>
             <View style={{ paddingHorizontal: 12}}>
@@ -17,8 +22,8 @@ export default function HomeScreen() {
 
 
                 <View style={{ marginTop: 12 }}>
-                    <Text style={{ color: '#666' }}>Tuesday, Nov 12</Text>
-                    <Text style={{ fontSize: 16, marginTop: 6 }}>Good Morning, Amit 👋</Text>
+                    <Text style={{ color: '#666' }}>{todayDate}</Text>
+                    <Text style={{ fontSize: 16, marginTop: 6 }}>{`${welcomeMessage}, Amit`}</Text>
                 </View>
             </View>
 

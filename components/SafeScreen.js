@@ -15,10 +15,11 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: colors.BACKGROUND,
-    paddingTop: 12,
+    paddingTop: 8,
     paddingHorizontal: 8,
   },
   container: {
     flex: 1,
   },
 });
+

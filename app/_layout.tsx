@@ -4,6 +4,7 @@ import { Slot } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, View } from 'react-native';
+import colors from '../constants/colors';
 
 // Replace this import with the actual path where you implement HabitsContext / provider.
 // If you haven't created it yet, create a provider at /context/HabitsContext.tsx that exports `HabitsProvider`.
@@ -26,5 +27,6 @@ export default function RootLayout() {
 const styles = StyleSheet.create({
   flex: {
     flex: 1,
+    backgroundColor: colors.BACKGROUND
   },
 });
