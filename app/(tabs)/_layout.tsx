@@ -51,7 +51,7 @@ export default function TabLayout() {
                   activeOpacity={0.9}
                   style={styles.addButton}
                 >
-                  <Ionicons name="add" size={34} color={focused ? "#111" : "#888"} />
+                  <Text style={{fontSize: 30, fontWeight: "bold"}}>＋</Text>
                 </TouchableOpacity>
               </View>
             ),
