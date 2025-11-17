@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Platform,
+  Text,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import colors from "../../constants/colors";
@@ -45,12 +46,12 @@ export default function TabLayout() {
             tabBarShowLabel: false,
             tabBarIcon: ({ focused }) => (
 
-              <View style={styles.addButtonWrapper} pointerEvents="box-none">
+              <View style={styles.addButtonWrapper}>
                 <TouchableOpacity
                   activeOpacity={0.9}
                   style={styles.addButton}
                 >
-                  <Ionicons name="add" size={34} color="#fff" />
+                  <Ionicons name="add" size={34} color={focused ? "#111" : "#888"} />
                 </TouchableOpacity>
               </View>
             ),
@@ -94,6 +95,8 @@ const styles = StyleSheet.create({
     marginBottom: 10,
 
 
+
+
     ...Platform.select({
       ios: {
         shadowColor: "#000",
@@ -118,19 +121,12 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: "#111",
+    backgroundColor: "#fff",
     alignItems: "center",
     justifyContent: "center",
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOpacity: 0.25,
-        shadowRadius: 8,
-        shadowOffset: { width: 0, height: 4 },
-      },
-      android: {
-        elevation: 6,
-      },
-    }),
+    elevation: 6,
+
+
+
   },
 });

@@ -1,56 +1,83 @@
-import React from 'react';
-import { View, Text, Pressable } from 'react-native';
-import { SafeAreaView } from "react-native-safe-area-context";
-import SafeScreen from '../../components/SafeScreen';
-
+// app/(tabs)/index.tsx
+import React from "react";
+import {  View, Text, FlatList, Pressable, StyleSheet } from "react-native";
+import { useRouter } from "expo-router";
+import SafeScreen from "../../components/SafeScreen";
+import { useHabits } from "../../hooks/useHabits";
 
 export default function HomeScreen() {
+  const router = useRouter();
+  const { loaded, todayHabits } = useHabits();
 
-    const todayDate = new Date().getDate() + ' ' + new Date().toLocaleString('default', { month: 'long' }) + ', ' + new Date().getFullYear();
-    const timeNow = new Date().getHours();
-    console.log("Today's Date:", timeNow);
-    const welcomeMessage = timeNow < 12 ? "Good Morning" : timeNow < 18 ? "Good Afternoon" : "Good Evening";
-    return (
-        <SafeScreen>
-            <View style={{ paddingHorizontal: 12}}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Text style={{ fontSize: 18, fontWeight: '600' }}>Habitly</Text>
-                    <Pressable onPress={() => { /* open settings route */ }}>
-                        <Text style={{ fontSize: 20 }}>⚙️</Text>
-                    </Pressable>
+  return (
+    <SafeScreen>
+      <View style={styles.header}>
+        <Text style={styles.title}>Habitly</Text>
+        <Pressable onPress={() => router.push("/settings")}>
+          <Text style={styles.settings}>⚙️</Text>
+        </Pressable>
+      </View>
+
+      <View style={{ paddingHorizontal: 16 }}>
+        <Text style={styles.sub}>Today</Text>
+      </View>
+
+      <View style={{ flex: 1, padding: 16 }}>
+        {!loaded ? (
+          <Text>Loading…</Text>
+        ) : todayHabits.length === 0 ? (
+          <View style={styles.empty}>
+            <Text style={{ color: "#666" }}>No habits for today — add one with the + button</Text>
+          </View>
+        ) : (
+          <FlatList
+            data={todayHabits}
+            keyExtractor={(i) => i.id}
+            renderItem={({ item }) => (
+              <View style={styles.card}>
+                <Text style={{ fontSize: 22 }}>{item.emoji}</Text>
+                <View style={{ marginLeft: 12, flex: 1 }}>
+                  <Text style={{ fontWeight: "700" }}>{item.name}</Text>
+                  <Text style={{ color: "#666", marginTop: 4 }}>
+                    {item.goalType === "simple"
+                      ? "Simple"
+                      : item.goalType === "time"
+                      ? `${item.goalValue ?? 0} min`
+                      : `${item.goalValue ?? 0} times`}
+                  </Text>
                 </View>
-
-
-                <View style={{ marginTop: 12 }}>
-                    <Text style={{ color: '#666' }}>{todayDate}</Text>
-                    <Text style={{ fontSize: 16, marginTop: 6 }}>{`${welcomeMessage}, Amit`}</Text>
-                </View>
-            </View>
-
-
-            {/* List area (block-level placeholders) */}
-            <View style={{ padding: 16, flex: 1 }}>
-                {[1, 2, 3].map((i) => (
-                    <View key={i} style={{
-                        borderWidth: 1,
-                        borderColor: '#eee',
-                        borderRadius: 12,
-                        padding: 12,
-                        marginBottom: 12,
-                        backgroundColor: '#fff',
-                    }}>
-                        <Text style={{ marginBottom: 8 }}>Habit Card ({i}) — block placeholder</Text>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                            <Text>Emoji • Name • Goal • Reminder • Streak</Text>
-                            <View style={{ flexDirection: 'row', gap: 8 }}>
-                                <Text>✅</Text>
-                                <Text>⏭️</Text>
-                                <Text>➗</Text>
-                            </View>
-                        </View>
-                    </View>
-                ))}
-            </View>
-        </SafeScreen>
-    );
+              </View>
+            )}
+            ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
+          />
+        )}
+      </View>
+    </SafeScreen>
+  );
 }
+
+const styles = StyleSheet.create({
+  header: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  title: { fontSize: 18, fontWeight: "700" },
+  settings: { fontSize: 20 },
+  sub: { fontSize: 14, color: "#666", marginTop: 8, marginLeft: 16 },
+  card: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#eee",
+    backgroundColor: "#fff",
+  },
+  empty: {
+    padding: 20,
+    alignItems: "center",
+  },
+});

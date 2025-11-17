@@ -1,5 +1,5 @@
 // app/(tabs)/add.tsx
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -12,51 +12,35 @@ import {
   Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
+import type { Habit as HabitType } from "../../context/HabitsContext";
 import SafeScreen from "../../components/SafeScreen";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useHabits } from "../../hooks/useHabits";
 
 type GoalType = "simple" | "time" | "count";
 
-type Habit = {
-  id: string;
-  name: string;
-  emoji: string;
-  goalType: GoalType;
-  goalValue?: number | null; // minutes for time, count for count
-  repeatDays: number[]; // 0..6 (Sun..Sat)
-  reminder?: string | null; // "HH:MM" or null
-  createdAt: string; // ISO
-  streak: { current: number; longest: number };
-  history?: Array<{ date: string; status: "done" | "skip" | "partial"; value?: number }>;
-};
-
-const STORAGE_KEY = "habitly:habits_v1";
-
 export default function AddHabitScreen() {
   const router = useRouter();
+  const { addHabit } = useHabits();
 
   const [name, setName] = useState("");
-  const [emoji, setEmoji] = useState("🏃"); // default emoji
+  const [emoji, setEmoji] = useState("🏃");
   const [goalType, setGoalType] = useState<GoalType>("simple");
-  const [goalValue, setGoalValue] = useState<string>(""); // hold as string for input
-  const [repeatDays, setRepeatDays] = useState<number[]>([1,2,3,4,5]); // Mon-Fri default
+  const [goalValue, setGoalValue] = useState<string>("");
+  const [repeatDays, setRepeatDays] = useState<number[]>([1, 2, 3, 4, 5]);
   const [reminderEnabled, setReminderEnabled] = useState(false);
   const [reminderTime, setReminderTime] = useState<string>("08:00");
-
   const [saving, setSaving] = useState(false);
 
-  // small emoji palette
   const emojis = ["🏃", "📚", "🧘", "💧", "☕️", "📝", "🎸", "🚶", "🍎", "🛌", "🧹", "💪"];
 
   function toggleDay(dayIndex: number) {
-    setRepeatDays(prev => {
-      if (prev.includes(dayIndex)) return prev.filter(d => d !== dayIndex);
-      return [...prev, dayIndex].sort((a,b) => a-b);
+    setRepeatDays((prev) => {
+      if (prev.includes(dayIndex)) return prev.filter((d) => d !== dayIndex);
+      return [...prev, dayIndex].sort((a, b) => a - b);
     });
   }
 
   function validateTimeString(t: string) {
-    // Accepts HH:MM 24-hour format
     if (!t) return false;
     const m = t.match(/^([01]?\d|2[0-3]):([0-5]\d)$/);
     return !!m;
@@ -69,8 +53,7 @@ export default function AddHabitScreen() {
     return Math.max(0, Math.floor(n));
   }
 
-  async function saveHabit() {
-    // validation
+  async function onSave() {
     if (!name.trim()) {
       Alert.alert("Please enter a habit name");
       return;
@@ -92,7 +75,7 @@ export default function AddHabitScreen() {
       return;
     }
 
-    const newHabit: Habit = {
+    const newHabit: HabitType = {
       id: Date.now().toString(),
       name: name.trim(),
       emoji,
@@ -107,24 +90,19 @@ export default function AddHabitScreen() {
 
     try {
       setSaving(true);
-      const raw = await AsyncStorage.getItem(STORAGE_KEY);
-      const existing: Habit[] = raw ? JSON.parse(raw) : [];
-      const updated = [newHabit, ...existing];
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-      // Navigate back to home. Use replace so the user doesn't go back to this screen with stale state.
+      await addHabit(newHabit);
+      // navigate back to tabs (home)
       router.replace("/(tabs)");
     } catch (err) {
-      console.error("Failed to save habit", err);
+      console.error("Failed to add habit", err);
       Alert.alert("Failed to save habit. Try again.");
     } finally {
       setSaving(false);
     }
   }
 
-  // small helper to toggle reminder enabled (coerce properly)
   function toggleReminder() {
-    setReminderEnabled(prev => !prev);
-    // if turning on and empty, ensure default valid time
+    setReminderEnabled((prev) => !prev);
     if (!reminderEnabled && !reminderTime) setReminderTime("08:00");
   }
 
@@ -148,7 +126,7 @@ export default function AddHabitScreen() {
           <View style={styles.field}>
             <Text style={styles.label}>Emoji</Text>
             <View style={styles.emojiRow}>
-              {emojis.map(e => (
+              {emojis.map((e) => (
                 <TouchableOpacity
                   key={e}
                   onPress={() => setEmoji(e)}
@@ -158,7 +136,9 @@ export default function AddHabitScreen() {
                 </TouchableOpacity>
               ))}
             </View>
-            <Text style={styles.helper}>Tap to choose. Selected: <Text style={{fontSize:18}}>{emoji}</Text></Text>
+            <Text style={styles.helper}>
+              Tap to choose. Selected: <Text style={{ fontSize: 18 }}>{emoji}</Text>
+            </Text>
           </View>
 
           <View style={styles.field}>
@@ -201,7 +181,7 @@ export default function AddHabitScreen() {
           <View style={styles.field}>
             <Text style={styles.label}>Repeat days</Text>
             <View style={styles.weekRow}>
-              {["Su","Mo","Tu","We","Th","Fr","Sa"].map((d, idx) => {
+              {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((d, idx) => {
                 const active = repeatDays.includes(idx);
                 return (
                   <TouchableOpacity
@@ -235,7 +215,7 @@ export default function AddHabitScreen() {
           </View>
 
           <View style={{ marginTop: 18 }} />
-          <TouchableOpacity onPress={saveHabit} style={[styles.saveBtn, saving && { opacity: 0.6 }]}>
+          <TouchableOpacity onPress={onSave} style={[styles.saveBtn, saving && { opacity: 0.6 }]}>
             <Text style={styles.saveBtnText}>{saving ? "Saving..." : "Save Habit"}</Text>
           </TouchableOpacity>
 
