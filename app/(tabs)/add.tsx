@@ -11,6 +11,8 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+
 import { useRouter } from "expo-router";
 import type { Habit as HabitType } from "../../context/HabitsContext";
 import SafeScreen from "../../components/SafeScreen";
@@ -108,7 +110,8 @@ export default function AddHabitScreen() {
 
   return (
     <SafeScreen>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.select({ ios: "padding", android: undefined })}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={Platform.select({ ios: 0, android: 80 })}>
+
         <ScrollView contentContainerStyle={styles.container}>
           <Text style={styles.header}>Add Habit</Text>
 

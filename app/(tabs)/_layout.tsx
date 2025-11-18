@@ -8,7 +8,7 @@ import {
   Platform,
   Text,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { AntDesign, Entypo, Ionicons, MaterialIcons } from "@expo/vector-icons";
 import colors from "../../constants/colors";
 
 export default function TabLayout() {
@@ -46,14 +46,11 @@ export default function TabLayout() {
             tabBarShowLabel: false,
             tabBarIcon: ({ focused }) => (
 
-              <View style={styles.addButtonWrapper}>
-                <TouchableOpacity
-                  activeOpacity={0.9}
-                  style={styles.addButton}
-                >
-                  <Text style={{fontSize: 30, fontWeight: "bold"}}>＋</Text>
-                </TouchableOpacity>
-              </View>
+              focused ? <Entypo
+                name={"circle-with-plus"}
+                size={30}
+                color={"#111"}
+              /> : <AntDesign name="plus-circle" size={26} color="#888" />
             ),
 
           }}
