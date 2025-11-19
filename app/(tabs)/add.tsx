@@ -90,6 +90,7 @@ export default function AddHabitScreen() {
       history: [],
     };
 
+    console.log(newHabit)
     try {
       setSaving(true);
       await addHabit(newHabit);

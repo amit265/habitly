@@ -33,6 +33,10 @@ export default function HomeScreen() {
     }
   }
 
+  console.log("Rendering HomeScreen, todayHabits:", todayHabits);
+  console.log("Loaded status:", loaded);
+  console.log("markhabitday", markHabitDay)
+
   function doneStatusForToday(h: Habit) {
     if (!h.history || h.history.length === 0) return "not";
     const rec = h.history.find((r) => r.date === todayDate);
