@@ -32,7 +32,6 @@ export default function SettingsScreen() {
   const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(true);
   const [loading, setLoading] = useState(true);
 
-  // load persisted settings
   useEffect(() => {
     let mounted = true;
     (async () => {
