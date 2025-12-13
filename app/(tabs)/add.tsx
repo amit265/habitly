@@ -11,8 +11,6 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
-
 import { useRouter } from "expo-router";
 import type { Habit as HabitType } from "../../context/HabitsContext";
 import SafeScreen from "../../components/SafeScreen";

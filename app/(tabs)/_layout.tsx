@@ -3,10 +3,8 @@ import React from "react";
 import { Tabs } from "expo-router";
 import {
   View,
-  TouchableOpacity,
   StyleSheet,
   Platform,
-  Text,
 } from "react-native";
 import { AntDesign, Entypo, Ionicons, MaterialIcons } from "@expo/vector-icons";
 import colors from "../../constants/colors";
